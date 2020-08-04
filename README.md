@@ -1,12 +1,7 @@
 ## Demo
 
-### 1) examples/index([live]() | [source code]())
+### 1) import and show 3D .gpx Track ([live](https://hzuellig.github.io/summertrails/) )
+### 2) Show Image on click ([live]() )
 
-## Based on three-geo [three-geo](https://github.com/w3reality/three-geo/) and three.js
+## Based on three-geo [three-geo](https://github.com/w3reality/three-geo/), three.js [three.js](https://threejs.org), exif [exif](https://github.com/exif-js/exif-js)
 
-## Setup
-
-**Installation**
-
-```
-$ npm i three-geo
