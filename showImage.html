@@ -26,32 +26,34 @@
             font-family: 'Fjalla One', sans-serif;
             color:black;
         }
-        #imgcanvas{
-            position:absolute;
-            z-index:100;
-            bottom:0px;
-            left:0px;
-            top:0px;
-            right:0px;
-            background-color:transparent;
-            background-blend-mode:color-dodge;
-            width:100%;
-            height:100%;
 
+        .label{
+            font-family: 'Fjalla One', sans-serif;
+            color:#180e3d;
+            font-size:1.1rem;
+            background-color:rgba(0,0,0,0.5);
+            display:none;
         }
+        .label.show{
+            display:block;
+        }
+
         #canvas{
-            z-index:200;
+
             position:absolute;
         }
         canvas{
             overflow:hidden;
+        }
+        img{
+            display:block;
         }
     </style>
 </head>
 <body>
 
 <canvas id="canvas" style="width: 100%; height: 100%;"></canvas>
-<div id="imgcanvas" ></div>
+
 <nav id="nav"><a href="#" data-longitude="9.814014308596548" data-latitude="46.8011922" data-altitude="1856">Alpengarten Schatzalp</a></nav>
 
 
@@ -69,6 +71,8 @@
 <!--<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/exif-js/2.3.0/exif.min.js"></script>-->
 
 <script type="module">
+    import { CSS2DRenderer, CSS2DObject } from 'https://threejs.org/examples/jsm/renderers/CSS2DRenderer.js';
+
     import {GUI} from 'https://threejsfundamentals.org/threejs/../3rdparty/dat.gui.module.js';
 
     class ColorGUIHelper {
@@ -84,7 +88,7 @@
         }
     }
     //https://github.com/w3reality/three-geo
-    const pathpoints = [];
+
 
     const raycaster = new THREE.Raycaster();
     var mouse = new THREE.Vector2(), INTERSECTED;
@@ -92,6 +96,7 @@
 
     var clickables = [];
 
+    var labelRenderer;
 
     const canvas = document.getElementById("canvas");
     const scene = new THREE.Scene();
@@ -101,7 +106,13 @@
     const renderer = new THREE.WebGLRenderer({ canvas, alpha:true });
     renderer.setSize( window.innerWidth, window.innerHeight );
 
-    const controls = new THREE.OrbitControls(camera, renderer.domElement);
+    labelRenderer = new CSS2DRenderer();
+    labelRenderer.setSize( window.innerWidth, window.innerHeight );
+    labelRenderer.domElement.style.position = 'absolute';
+    labelRenderer.domElement.style.top = '0px';
+    document.body.appendChild( labelRenderer.domElement );
+
+    const controls = new THREE.OrbitControls(camera, labelRenderer.domElement);
     controls.autoRotate = true;
     controls.autoRotateSpeed = 0.5;
 
@@ -116,32 +127,7 @@
     scene.add(light);
     scene.add(light.target);
 
-    //..................GUI.......................
-    /*const gui = new GUI();
-    gui.addColor(new ColorGUIHelper(light, 'color'), 'value').name('color');
-    gui.add(light, 'intensity', 0, 2, 0.01);
-    gui.add(light.target.position, 'x', -10, 10);
-    gui.add(light.target.position, 'z', -10, 10);
-    gui.add(light.target.position, 'y', 0, 10);*/
 
-    /*const helper = new THREE.DirectionalLightHelper(light);
-    scene.add(helper);*/
-
-    /*function makeXYZGUI(gui, vector3, name, onChangeFn) {
-        const folder = gui.addFolder(name);
-        folder.add(vector3, 'x', -10, 10).onChange(onChangeFn);
-        folder.add(vector3, 'y', 0, 10).onChange(onChangeFn);
-        folder.add(vector3, 'z', -10, 10).onChange(onChangeFn);
-        folder.open();
-    }*/
-    /*function updateLight(){
-        light.target.updateMatrixWorld();
-        helper.update();
-    }
-    updateLight();*/
-
-    //makeXYZGUI(gui, light.position, 'position', updateLight);
-    //makeXYZGUI(gui, light.target.position, 'target', updateLight);
 
     const render = () => {
         //stats.update();
@@ -173,7 +159,7 @@
         const { proj, unitsPerMeter } = tgeo.getProjection(origin, radius);
         let coord = proj([pos.lat, pos.lng]);
 
-        let geometry = new THREE.SphereGeometry( 20 * unitsPerMeter, 32, 32 );
+        let geometry = new THREE.SphereGeometry( 30 * unitsPerMeter, 32, 32 );
         //var geometry = new THREE.BoxBufferGeometry( 50 * unitsPerMeter, 50 * unitsPerMeter, 50 * unitsPerMeter );
 
         geometry.imgpath = src;
@@ -185,6 +171,46 @@
 
         clickables.push(sphere);
         scene.add( sphere );
+
+        var loader = new THREE.ImageLoader();
+
+        // load a image resource
+        loader.load(
+            // resource URL
+            src,
+
+            // onLoad callback
+            function ( image ) {
+
+                var imgcanvas  = document.createElement('canvas');
+
+                 imgcanvas.width = 160;
+                 imgcanvas.height = 120;
+                 var context = imgcanvas.getContext( '2d' );
+                 context.drawImage( image, 0, 0 );
+
+                var labelDiv = document.createElement( 'div' );
+                labelDiv.className = 'label';
+                //labelDiv.textContent = "Image"+src;
+                labelDiv.style.marginTop = '-65px';
+                labelDiv.appendChild(imgcanvas);
+
+                var Label = new CSS2DObject( labelDiv );
+                Label.position.set( 0,0,0 );
+                sphere.add( Label );
+            },
+
+            // onProgress callback currently not supported
+            undefined,
+
+            // onError callback
+            function () {
+                console.error( 'An error happened.' );
+            }
+        );
+
+
+
 
     }
 
@@ -260,41 +286,14 @@
 
 
     //..................show image .......................
-    const showImageCanvas = (img, mousepos) => {
+    const showImageCanvas = (el) => {
 
-        var loader = new THREE.ImageLoader();
-
-        // load a image resource
-        loader.load(
-            // resource URL
-            img,
-
-            // onLoad callback
-            function ( image ) {
-                /*
-                 var canv = document.createElement('canvas');
-                 canv.id = 'someId';
-
-                 document.body.appendChild(canv);
-                */
-                var imgcanvas  = document.getElementById('imgcanvas');
-                imgcanvas.style.backgroundImage="url("+img+")";
-                imgcanvas.style.backgroundSize = "cover";
-                imgcanvas.style.mixBlendMode = "color-dodge";
-                /*imgcanvas.width = image.naturalWidth;
-                imgcanvas.height = image.naturalHeight;
-                var context = imgcanvas.getContext( '2d' );
-                context.drawImage( image, 0, 0, image.width, image.height );*/
-            },
-
-            // onProgress callback currently not supported
-            undefined,
-
-            // onError callback
-            function () {
-                console.error( 'An error happened.' );
+        Array.from(document.getElementsByClassName("label")).forEach(function(item) {
+            item.className = item.className.replace(/\bshow\b/g, "");
             }
         );
+
+        el.children[0].element.classList.add("show");
     }
 
 
@@ -518,14 +517,13 @@
 
                     if ( INTERSECTED ) {
                         INTERSECTED.material.emissive.setHex( INTERSECTED.currentHex );
-                        showImageCanvas('none');
                     }
 
                     INTERSECTED = intersects[ 0 ].object;
                     INTERSECTED.currentHex = INTERSECTED.material.emissive.getHex();
                     INTERSECTED.material.emissive.setHex( 0xFFFFFF );
 
-                    showImageCanvas(INTERSECTED.geometry.imgpath);
+                    showImageCanvas(INTERSECTED);
                     //console.log(INTERSECTED)
 
 
@@ -540,6 +538,7 @@
             }
 
             renderer.render( scene, camera );
+            labelRenderer.render( scene, camera );
 
 
         }, 1000 / framesPerSecond);
