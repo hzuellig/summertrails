@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-type" content="text/html; charset=utf-8"/>
+    <title>Strela Walk</title>
+</head>
+<body>
+
+<canvas id="canvas" style="width: 100%; height: 100%;"></canvas>
+
+<script src="lib/three.min.js"></script>
+<script src="lib/OrbitControls.js"></script>
+<!-- <script src="../deps/stats.min.js"></script> -->
+<script src="lib/threelet.min.js"></script>
+
+<script src="lib/three-geo.min.js"></script>
+
+<script src="lib/d3.v3.js"></script>
+<!-- <script src="../../target/three-geo.js"></script> -->
+
+<script>
+    //https://github.com/w3reality/three-geo
+    /*const threelet = new Threelet({
+     canvas: document.getElementById("canvas"),
+     optAxes: false
+     });*/
+    const canvas = document.getElementById("canvas");
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000 );
+    camera.position.set(0, 0.7, 0.5);
+
+    const renderer = new THREE.WebGLRenderer({ canvas });
+    renderer.setSize( window.innerWidth, window.innerHeight );
+
+    const controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls.autoRotate = true;
+    controls.autoRotateSpeed = 0.5;
+    //document.body.appendChild( renderer.domElement );
+    controls.update();
+
+
+
+    const render = () => {
+        //stats.update();
+        renderer.render(scene, camera);
+    };
+
+    controls.addEventListener('change', render);
+    render();
+
+    const ioToken = 'pk.eyJ1IjoiamRldmVsIiwiYSI6ImNqemFwaGJoZjAyc3MzbXA1OGNuODBxa2EifQ.7M__SgfWZGJuEiSqbBXdoQ';
+    const tgeo = new ThreeGeo({
+        tokenMapbox: 'pk.eyJ1IjoiaHp1ZWxsaWciLCJhIjoiY2tjbmt1MjQwMGMzcDJybGZtcGR3NmR4aCJ9.HMZtdVsH8vPFyK5r5KmOHA' // <---- set your Mapbox API token here
+
+    });
+    //tgeo.setApiSatellite('./customtiles/');
+
+    if (tgeo.tokenMapbox === ioToken && window.location.origin !== 'https://w3reality.github.io') {
+        const warning = 'Please set your own Mapbox API token in the ThreeGeo constructor.';
+        alert(warning);
+        throw warning;
+    }
+
+    const origin = [46.802745, 9.835970];
+    const radius = 6.0;
+
+    var myColor = d3.scale.linear().domain([1500,2500]).range(["#385740", "#768279", "white", "#0b88d6"]);
+
+    // Hack for custom tiles ... @todo better: https://docs.mapbox.com/help/tutorials/georeferencing-imagery/
+    var data=[];
+    getImg("./customtiles/2159-1443-sw.jpg", 0);
+    getImg("./customtiles/2159-1444-sw.jpg", 1);
+    getImg("./customtiles/2160-1443-sw.jpg", 2);
+    getImg("./customtiles/2160-1444-sw.jpg", 3);
+
+
+    (async () => {
+
+        const terrain = await tgeo.getTerrainRgb(origin, radius, 12);
+         terrain.rotation.x = - Math.PI/2;
+         let child = 0
+         terrain.children.forEach(mesh => {
+             //mesh.material.color.setHex(0xcccccc);
+             mesh.material.wireframe = true;
+             //mesh.material.alphaMap = mesh.material.map;
+             //mesh.material.map = null;
+    //new Uint8Array(arrayBuffer);
+             switch(child){
+                 case(0):
+                     mesh.material.map.image.data = data[0];
+
+                     //console.log(data);
+                     break;
+                case(1):
+                    mesh.material.map.image.data = data[1];
+
+                 //console.log(data);
+                    break;
+                case(2):
+                    mesh.material.map.image.data = data[2];
+
+                 //console.log(data);
+                    break;
+                case(3):
+                    mesh.material.map.image.data = data[3];
+
+                 //console.log(data);
+                    break;
+             }
+
+
+             mesh.material.opacity=0.5;
+             mesh.material.wireframeLinewidth = 0.5;
+             child++;
+         });
+         console.log(terrain)
+         scene.add(terrain);
+
+
+
+        d3.xml('assets/Tracks.gpx', 'application/xml', gpxParser);
+
+
+
+    })();
+
+
+    function getImg(url, key){
+        var canvas = document.createElement('canvas'),
+        ctx = canvas.getContext('2d');
+        //size canvas
+        canvas.width = 512;
+        canvas.height = 512;
+
+
+//create image, set src to base64 and onload draw to canvas
+        var image = new Image();
+        image.src = url;
+
+        image.onload = (function(canvas, ctx){
+            return function(){
+                ctx.drawImage(this, 0, 0);
+
+                //now we can finally get a Uint8ClampedArray
+                var imageData = ctx.getImageData(0, 0, 512, 512);
+                data[key]=imageData.data;
+
+            }
+        })(canvas, ctx);
+
+    }
+
+    /*function gpxParser(gpx) {
+        var tracks = gpx.getElementsByTagName('trk');
+
+
+
+        const { proj, unitsPerMeter } = tgeo.getProjection(origin, radius);
+
+        for (i = 0; i < tracks.length; i=i+100) {
+            var points = tracks[i].getElementsByTagName('trkpt')
+            for (x = 0; x < points.length; x++) { // points.length
+                var point = points[x],
+                    alt = parseInt(point.getElementsByTagName('ele')[0].firstChild.nodeValue),
+                    lat = parseFloat(point.getAttribute('lat')),
+                    lng = parseFloat(point.getAttribute('lon')),
+                    coord = proj([lat, lng]);
+
+                let c = myColor(alt);
+                let material = new THREE.LineBasicMaterial({
+                    color: c
+                });
+
+                var pts = [];
+                pts.push( new THREE.Vector3( coord[0], (alt + 100) * unitsPerMeter, -coord[1] ) );
+                pts.push( new THREE.Vector3( coord[0], 0, -coord[1] ) );
+
+
+                var geometry = new THREE.BufferGeometry().setFromPoints( pts );
+
+                var line = new THREE.Line( geometry, material );
+                scene.add( line );
+
+
+
+
+            }
+        }
+
+
+        render();
+        animate();
+
+
+    }*/
+
+    function gpxParser(gpx) {
+        var tracks = gpx.getElementsByTagName('trk');
+
+
+
+        const { proj, unitsPerMeter } = tgeo.getProjection(origin, radius);
+
+        for (i = 0; i < tracks.length; i++) {
+            var points = tracks[i].getElementsByTagName('trkpt')
+            for (x = 0; x < points.length; x=x+5) { // points.length
+                var point = points[x],
+                    alt = parseInt(point.getElementsByTagName('ele')[0].firstChild.nodeValue),
+                    lat = parseFloat(point.getAttribute('lat')),
+                    lng = parseFloat(point.getAttribute('lon')),
+                    coord = proj([lat, lng]);
+
+
+                let c = myColor(alt);
+
+                let dot = new THREE.Points(
+                    new THREE.Geometry(),
+                    new THREE.PointsMaterial({
+                        size: 5,
+                        sizeAttenuation: false,
+                        color: "#FF0000",
+                    }));
+
+                dot.geometry.vertices.push(new THREE.Vector3(
+                    coord[0], (alt + 50) * unitsPerMeter , -coord[1]));
+                scene.add(dot);
+
+            }
+        }
+
+
+        render();
+        animate();
+
+    }
+
+    function animate() {
+
+        requestAnimationFrame( animate );
+
+        // required if controls.enableDamping or controls.autoRotate are set to true
+        controls.update();
+
+        renderer.render( scene, camera );
+
+    }
+
+</script>
+</body>
+</html>

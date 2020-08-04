@@ -1,0 +1,18 @@
+{
+  "name": "three_geo_standalone",
+  "version": "1.0.0",
+  "description": "Davos Walks, Three, Geo",
+  "main": "index.js",
+  "directories": {
+    "lib": "lib"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Hanna Zuellig",
+  "license": "ISC",
+  "dependencies": {
+    "exif-js": "^2.3.0",
+    "three": "^0.118.3"
+  }
+}
