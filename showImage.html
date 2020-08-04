@@ -186,7 +186,7 @@
                  imgcanvas.width = 160;
                  imgcanvas.height = 120;
                  var context = imgcanvas.getContext( '2d' );
-                 context.drawImage( image, 0, 0 );
+                 context.drawImage( image, 0, 0, 160, 120 );
 
                 var labelDiv = document.createElement( 'div' );
                 labelDiv.className = 'label';
@@ -499,7 +499,7 @@
 
     function animate() {
 
-        let framesPerSecond = 60;
+        let framesPerSecond = 30;
 
         setTimeout(function() {
             requestAnimationFrame(animate);
