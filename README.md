@@ -8,3 +8,4 @@
 
 ## Based on three-geo [three-geo](https://github.com/w3reality/three-geo/), three.js [three.js](https://threejs.org), exif [exif](https://github.com/exif-js/exif-js)
 
+## Read Licenses [source code](LICENSE)
