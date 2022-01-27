@@ -13,6 +13,6 @@
   "license": "ISC",
   "dependencies": {
     "exif-js": "^2.3.0",
-    "three": "^0.118.3"
+    "three": "^0.137.0"
   }
 }
